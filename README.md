@@ -47,6 +47,7 @@ library(readr)
 library(stringr)
 library(forcats)
 library(RColorBrewer)
+```
 
 ## UniProt annotation and one-pot SPROX analysis
 
