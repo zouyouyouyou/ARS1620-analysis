@@ -523,25 +523,6 @@ ggsave("volcano_SPROX_100uM_FC.png", SPROX_100uM_FC,
        dpi = 600)
 ```
 
-
-# > SPROX_10uM
-# Warning message:
-# Removed 12 rows containing missing values or values outside the scale range (`geom_point()`).
-
-# > SPROX_100uM
-# Warning messages:
-# 1: Removed 37 rows containing missing values or values outside the scale range (`geom_point()`). 
-# 2: Removed 5 rows containing missing values or values outside the scale range (`geom_point()`). 
-
-# > SPROX_10uM_FC
-# Warning message:
-# Removed 1 row containing missing values or values outside the scale range (`geom_point()`).
-
-# > SPROX_100uM_FC
-# Warning messages:
-# 1: Removed 16 rows containing missing values or values outside the scale range (`geom_point()`). 
-# 2: Removed 4 rows containing missing values or values outside the scale range (`geom_point()`). 
-
 ![SPROX 10 uM volcano plot](Results/volcano_SPROX_10uM.png)
 
 ![SPROX 100 uM volcano plot](Results/volcano_SPROX_100uM.png)
