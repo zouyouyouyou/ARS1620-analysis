@@ -47,3 +47,20 @@ library(readr)
 library(stringr)
 library(forcats)
 library(RColorBrewer)
+
+## UniProt annotation and one-pot SPROX analysis
+
+### Read UniProt annotation file
+
+The analysis begins by reading the UniProt human proteome annotation file and keeping the accession and gene name fields for downstream annotation.
+
+```r
+uniprot_proteome_Homo_Sapiens <- read_tsv("SPROX/Data/uniprotkb_proteome_UP000005640_2024_09_23.tsv")
+
+names(uniprot_proteome_Homo_Sapiens)[1] <- "Master_Protein_Accession"
+names(uniprot_proteome_Homo_Sapiens)[3] <- "Protein_names"
+names(uniprot_proteome_Homo_Sapiens)[4] <- "Gene_Name"
+
+uniprot_proteome <- uniprot_proteome_Homo_Sapiens %>%
+  dplyr::select(Master_Protein_Accession, Gene_Name) %>%
+  filter(!duplicated(.))
