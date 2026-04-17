@@ -64,6 +64,7 @@ names(uniprot_proteome_Homo_Sapiens)[4] <- "Gene_Name"
 uniprot_proteome <- uniprot_proteome_Homo_Sapiens %>%
   dplyr::select(Master_Protein_Accession, Gene_Name) %>%
   filter(!duplicated(.))
+```
 
 ### Read one-pot SPROX data
 
@@ -72,5 +73,6 @@ SPROX_Met_Enrich <- read_excel("SPROX/Data/ARS_1620_Enrich_non_scale.xlsx")
 names(SPROX_Met_Enrich)[3] <- "Annotated_Sequence"
 names(SPROX_Met_Enrich)[10] <- "Master_Protein_Accessions"
 names(SPROX_Met_Enrich)[11] <- "Positions_in_Master_Proteins"
+```
 
 
