@@ -524,3 +524,15 @@ ggsave("volcano_SPROX_100uM_FC.png", SPROX_100uM_FC,
 ```
 
 
+Use these exact lines for your figures:
+
+```md
+![SPROX 10 uM volcano plot](Results/volcano_SPROX_10uM.png)
+
+![SPROX 100 uM volcano plot](Results/volcano_SPROX_100uM.png)
+
+![SPROX 10 uM fold change volcano plot](Results/volcano_SPROX_10uM_FC.png)
+
+![SPROX 100 uM fold change volcano plot](Results/volcano_SPROX_100uM_FC.png)
+```
+
