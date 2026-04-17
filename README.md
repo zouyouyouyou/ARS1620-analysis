@@ -113,6 +113,39 @@ SPROX_norm_8 = sum(SPROX_Met_Enrich_fil_wt_Met$hundred_uM_1, na.rm = TRUE)/sum(S
 SPROX_norm_9 = sum(SPROX_Met_Enrich_fil_wt_Met$hundred_uM_2, na.rm = TRUE)/sum(SPROX_Met_Enrich_fil_wt_Met$Control_1, na.rm = TRUE)
 SPROX_norm_10 = sum(SPROX_Met_Enrich_fil_wt_Met$hundred_uM_3, na.rm = TRUE)/sum(SPROX_Met_Enrich_fil_wt_Met$Control_1, na.rm = TRUE)
 
+# print nromalization factors
+SPROX_norm_1 
+SPROX_norm_2 
+SPROX_norm_3 
+SPROX_norm_4 
+SPROX_norm_5
+SPROX_norm_6 
+SPROX_norm_7
+SPROX_norm_8 
+SPROX_norm_9 
+SPROX_norm_10
+
+> SPROX_norm_1 
+[1] 1
+> SPROX_norm_2 
+[1] 0.9998314
+> SPROX_norm_3 
+[1] 1.003346
+> SPROX_norm_4 
+[1] 1.000769
+> SPROX_norm_5
+[1] 1.001683
+> SPROX_norm_6 
+[1] 0.998944
+> SPROX_norm_7
+[1] 1.001597
+> SPROX_norm_8 
+[1] 0.9992734
+> SPROX_norm_9 
+[1] 1.003763
+> SPROX_norm_10 
+[1] 1.003005
+
 # apply normalization factor to each column
 SPROX_Met_Enrich_fil_wt_Met_norm <- SPROX_Met_Enrich_fil_wt_Met %>% 
   mutate(Control_1 = Control_1/SPROX_norm_1) %>% 
