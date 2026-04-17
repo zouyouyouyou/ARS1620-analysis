@@ -946,3 +946,230 @@ ggsave("volcano_TPP_100uM_FC.png", TPP_100uM_FC,
 
 ![TPP 100 uM fold change volcano plot](Results/volcano_TPP_100uM_FC.png)
 
+
+### ALDH1A3 Enzymatic Activity
+
+```r
+ALDH1A3 = read_excel("/Users/youzou/Desktop/ARS-1620/Activity_Assay/2025_11_05/ALDH1A3_single_file.xlsx")
+
+names(ALDH1A3)[2] <- "100000_nM"
+names(ALDH1A3)[3] <- "40000_nM"
+names(ALDH1A3)[4] <- "16000_nM"
+
+names(ALDH1A3)[5] <- "6400_nM"
+names(ALDH1A3)[6] <- "2560_nM"
+names(ALDH1A3)[7] <- "1024_nM"
+
+names(ALDH1A3)[8] <- "409_nM"
+names(ALDH1A3)[9] <- "163_nM"
+names(ALDH1A3)[10] <- "65_nM"
+
+names(ALDH1A3)[11] <- "26_nM"
+names(ALDH1A3)[12] <- "20_nM"
+names(ALDH1A3)[13] <- "DMSO_nM"
+
+ALDH1A3_fil <- ALDH1A3 %>% 
+  dplyr::select(2:13)
+
+ALDH1A3_fil_data <- ALDH1A3_fil[11:368, ]
+
+
+# generate data list for 30 timepoints.
+start_rows <- seq(5, by = 12, length.out = 30)
+
+Data_list <- lapply(start_rows, function(s) {
+  ALDH1A3_fil_data[s:(s + 2), ]
+})
+
+
+## Function to convert to numeric matrix and summarize
+summarize_block <- function(x) {
+  # convert every column to double
+  m <- as.matrix(
+    data.frame(lapply(as.data.frame(x), function(col) as.double(col)))
+  )
+  
+  # define exact concentration series: 100000 / 2.5^(0:10), then add 0 for DMSO
+  n_cols <- ncol(m)
+  conc_values <- c(100000 / (2.5)^(0:(n_cols - 2)), 0)  # last one is DMSO
+  
+  # compute mean and SD
+  means <- colMeans(m, na.rm = TRUE)
+  sds   <- apply(m, 2, sd, na.rm = TRUE)
+  
+  data.frame(
+    concentration_nM = round(conc_values, 1),  # ⬅ keep one decimal
+    mean = as.double(means),
+    sd = as.double(sds),
+    stringsAsFactors = FALSE
+  )
+}
+
+## Apply to the 30 blocks in Data_list
+ALDH1A3_summary <- do.call(
+  rbind,
+  lapply(seq_along(Data_list), function(i) {
+    df <- summarize_block(Data_list[[i]])
+    df$dataset <- paste0("Data_", i)
+    df
+  })
+)
+
+## Reorder columns: dataset first
+ALDH1A3_summary <- ALDH1A3_summary[, c("dataset", "concentration_nM", "mean", "sd")]
+
+# Build long summary for all 30 time points
+ALDH1A3_summary <- do.call(
+  rbind,
+  lapply(seq_along(Data_list), function(i) {
+    out <- summarize_block(Data_list[[i]])
+    out$time_min <- 2 * i  # 2, 4, 6, ..., 60
+    out
+  })
+)
+
+# Plot: one figure; each concentration is a line with SD ribbon
+ALDH1A3_summary <- subset(ALDH1A3_summary, time_min != 2)
+
+# make a labeled, ordered factor for concentrations
+levels_conc <- sort(unique(ALDH1A3_summary$concentration_nM), decreasing = TRUE)
+ALDH1A3_summary$conc_fac <- factor(
+  ALDH1A3_summary$concentration_nM,
+  levels = levels_conc,
+  labels = format(levels_conc, trim = TRUE, scientific = FALSE)
+)
+
+# Okabe–Ito palette (12 distinct, color-blind friendly)
+okabe_ito <- c("#E69F00","#56B4E9","#009E73","#F0E442",
+               "#0072B2","#D55E00","#CC79A7","#999999",
+               "#A6761D","#1B9E77","#E41A1C","#7570B3")[seq_along(levels_conc)]
+
+ALDH1A3_ARS1620_titration <- ggplot(ALDH1A3_summary,
+            aes(x = time_min, y = mean,
+                color = conc_fac, fill = conc_fac, group = conc_fac)) +
+  geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd),
+              alpha = 0.15, color = NA) +
+  geom_line(linewidth = 0.5) +
+  geom_point(size = 0.8) +
+  scale_color_manual(values = okabe_ito, drop = FALSE) +
+  scale_fill_manual(values = okabe_ito, drop = FALSE) +
+  labs(x = "Time (min)", y = "RFU",
+       color = "Conc. (nM)", fill = "Conc. (nM)") +
+  theme_minimal() +
+  theme(
+    legend.position = c("right"),  
+    legend.title = element_text(size = 14, face = "bold"), 
+    legend.text  = element_text(size = 13),                  
+    legend.key.size = unit(10, "pt"),       
+    legend.key.height = unit(16, "pt"),   
+    legend.spacing.y = unit(3, "pt"),  
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks.length = unit(2, "pt"),
+    plot.margin = margin(6, 10, 6, 10),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text = element_text(size = 14),
+    plot.title = element_blank()
+  )
+
+ALDH1A3_ARS1620_titration <- ALDH1A3_ARS1620_titration +
+  guides(
+    color = guide_legend(reverse = TRUE),
+    fill  = guide_legend(reverse = TRUE)
+  )
+
+ALDH1A3_ARS1620_titration
+
+
+ggsave("ALDH1A3_ARS1620_titration.png", ALDH1A3_ARS1620_titration,
+       device = ragg::agg_png,
+       width = 6.0, height = 3.6,
+       units = "in", dpi = 600)
+
+
+# make sure you have time_min available (2, 4, 6, …)
+names(ALDH1A3_summary)
+
+# calculate slope for each concentration using linear regression
+slope_summary <- ALDH1A3_summary %>%
+  group_by(concentration_nM) %>%
+  summarise(
+    slope = coef(lm(mean ~ time_min))[2],
+    intercept = coef(lm(mean ~ time_min))[1],
+    r_squared = summary(lm(mean ~ time_min))$r.squared
+  ) %>% 
+  mutate(
+    log10_concentration = ifelse(concentration_nM > 0, log10(concentration_nM), NA_real_)
+  )
+
+# define x-axis limits
+xmin <- 0
+xmax <- 6
+
+# 1) Build x from -log10 for nonzero concentrations
+x_nonzero <- with(slope_summary, ifelse(concentration_nM > 0, log10(concentration_nM), NA_real_))
+
+# 2) Choose a left-of-min position for DMSO that stays inside your limits [0.5, 5.5]
+min_nonzero <- min(x_nonzero, na.rm = TRUE)
+dmso_x <- min_nonzero - 0.6
+dmso_x <- max(xmin, min(dmso_x, xmax))  # clamp to limits
+
+# 3) Final x for plotting
+slope_summary <- slope_summary %>%
+  mutate(
+    x_plot = ifelse(concentration_nM == 0, dmso_x, x_nonzero)
+  )
+
+# 4) Plot (no missing DMSO)
+ALDH1A3_ARS1620_titration_curve <- ggplot(slope_summary, aes(x = x_plot, y = slope)) +
+  # connect only non-DMSO points
+  geom_line(
+    data = subset(slope_summary, concentration_nM > 0),
+    linewidth = 1, color = "black", na.rm = TRUE
+  ) +
+  # DMSO point in blue, isolated
+  geom_point(
+    data = subset(slope_summary, concentration_nM == 0),
+    size = 2.5, color = "blue"
+  ) +
+  # other points
+  geom_point(
+    data = subset(slope_summary, concentration_nM > 0),
+    size = 2.0, color = "black"
+  ) +
+  labs(
+    x = expression(log[10]~"(ARS-1620, nM)"),
+    y = "ALDH1A3 Activity",
+    title = "ALDH1A3~ARS-1620"
+  ) +
+  scale_x_continuous(limits = c(0, 6),
+                     breaks = seq(0, 6, by = 1),
+                     labels = scales::number_format(accuracy = 1)) +
+  scale_y_continuous(limits = c(0, 900),
+                     breaks = seq(0, 900, by = 200)) +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks.length = unit(2, "pt"),
+    plot.margin = margin(6, 10, 6, 10),
+    axis.title.x = element_text(size = 10, face = "bold"),
+    axis.title.y = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    plot.title = element_blank()
+  )
+
+ALDH1A3_ARS1620_titration_curve
+
+ggsave("ALDH1A3_ARS1620_titration_curve.png", ALDH1A3_ARS1620_titration_curve,
+       device = ragg::agg_png,
+       width = 4.0, height = 2.5,
+       units = "in", dpi = 600)
+
+```
