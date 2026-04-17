@@ -175,7 +175,7 @@ SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test <- SPROX_Met_Enrich_fil_wt_Met_nor
       y <- y[!is.na(y)]
       if (length(x) > 0 && length(y) > 0) mean(y) / mean(x) else NA_real_
     },
-    
+
     log2FC_ten_uM = if (!is.na(fold_change_ten_uM) && fold_change_ten_uM > 0) {
       log2(fold_change_ten_uM)
     } else {
@@ -270,7 +270,6 @@ SPROX_Hits_overlapped <- inner_join(
 #plot the result
 
 # plot the volcano plots with Z-Score.
-
 SPROX_Hits_overlapped_plot <- SPROX_Hits_overlapped %>% 
   left_join(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name) %>% 
   filter(p_value_ten_uM < 0.05) %>% 
@@ -333,7 +332,6 @@ ggsave("volcano_SPROX_10uM.png", SPROX_10uM,
        device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
        dpi = 600)
 
-
 # SPROX_100uM
 SPROX_100uM <- ggplot() +
   # Background
@@ -384,6 +382,143 @@ SPROX_100uM <- ggplot() +
 SPROX_100uM
 
 ggsave("volcano_SPROX_100uM.png", SPROX_100uM,
+       device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
+       dpi = 600)
+
+
+# plot the volcano plots with fold changes.
+
+# filter for hits
+SPROX_Hits_ten_uM_FC <- SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(log2FC_ten_uM) > 0.2) %>% 
+  dplyr::select(Gene_Name) %>% 
+  distinct()
+
+SPROX_Hits_hundred_uM_FC <- SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(log2FC_hundred_uM) > 0.2) %>% 
+  dplyr::select(Gene_Name) %>% 
+  distinct()
+
+SPROX_Hits_overlapped_FC <- inner_join(
+  SPROX_Hits_ten_uM_FC, 
+  SPROX_Hits_hundred_uM_FC) %>% 
+  distinct()
+
+#plot the result
+SPROX_Hits_overlapped_plot_FC <- SPROX_Hits_overlapped_FC %>% 
+  left_join(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name) %>% 
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(log2FC_ten_uM) > 0.2) %>% 
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(log2FC_ten_uM) > 0.2) %>% 
+  filter(!Gene_Name == "ALDH1A3") %>% 
+  filter(!Gene_Name == "KRAS")
+
+# SPROX_10uM
+SPROX_10uM_FC <- ggplot() +
+  # Background
+  geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "grey", size = 0.3, alpha = 0.6) +
+  # other proteins
+  geom_point(data = SPROX_Hits_overlapped_plot_FC, aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
+  # KRAS
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"), 
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "red", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = 0.3, nudge_y = 0, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ALDH1A3
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" &  sequence == "GLFIKPTVFSEVTDNMR"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.2, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ADK
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK" & sequence == "VAQWMIQQPHK"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK" & sequence == "VAQWMIQQPHK"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # Thresholds
+  geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
+  geom_vline(xintercept = c(-0.2, 0.2), linetype = "33", color = "black", linewidth = 0.25) +
+  labs(
+    x = expression(log[2]~"FC(10 uM)"),y = expression(-log[10]~"(p-value)")) +
+  scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 1), labels = scales::number_format(accuracy = 1)) +
+  scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks.length = unit(2, "pt"),
+    plot.margin = margin(6, 10, 6, 10),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12))
+
+SPROX_10uM_FC
+
+ggsave("volcano_SPROX_10uM_FC.png", SPROX_10uM_FC,
+       device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
+       dpi = 600)
+
+# SPROX_100uM
+SPROX_100uM_FC <- ggplot() +
+  # Background
+  geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
+  # other proteins
+  geom_point(data = SPROX_Hits_overlapped_plot_FC, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
+  # KRAS
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"), 
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "red", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = 0.2, nudge_y = 0, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ALDH1A3
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ADK
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK" & sequence == "VAQWMIQQPHK"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK" & sequence == "VAQWMIQQPHK"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # Thresholds
+  geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
+  geom_vline(xintercept = c(-0.2, 0.2), linetype = "33", color = "black", linewidth = 0.25) +
+  labs(
+    x = expression(log[2]~"FC(10 uM)"),y = expression(-log[10]~"(p-value)")) +
+  scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 1), labels = scales::number_format(accuracy = 1)) +
+  scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks.length = unit(2, "pt"),
+    plot.margin = margin(6, 10, 6, 10),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12))
+
+SPROX_100uM_FC
+
+ggsave("volcano_SPROX_100uM_FC.png", SPROX_100uM_FC,
        device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
        dpi = 600)
 ```
