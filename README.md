@@ -1174,3 +1174,7 @@ ggsave("ALDH1A3_ARS1620_titration_curve.png", ALDH1A3_ARS1620_titration_curve,
        units = "in", dpi = 600)
 
 ```
+
+![ALDH1A3 ARS1620 titration](Results/ALDH1A3_ARS1620_titration.png)
+
+![ALDH1A3 ARS1620 titration curve](Results/ALDH1A3_ARS1620_titration_curve.png)
