@@ -532,3 +532,410 @@ ggsave("volcano_SPROX_100uM_FC.png", SPROX_100uM_FC,
 ![SPROX 100 uM fold change volcano plot](Results/volcano_SPROX_100uM_FC.png)
 
 
+### TPP analysis
+
+```r
+# read TPP files
+TPP_Protein = read_excel("/Users/youzou/Desktop/ARS-1620/TPP/Data/ARS_1620_TPP_Protein_no_scale.xlsx")
+
+# rename the columns
+names(TPP_Protein)[4] <- "Master_Protein_Accession" 
+names(TPP_Protein)[9] <- "num_Peptides" 
+names(TPP_Protein)[10] <- "num_PSMs" 
+names(TPP_Protein)[11] <- "num_Unique_Peptides" 
+names(TPP_Protein)[12] <- "num_AAs" 
+
+names(TPP_Protein)[18] <- "Control_1" 
+names(TPP_Protein)[19] <- "Control_2" 
+names(TPP_Protein)[20] <- "Control_3" 
+names(TPP_Protein)[21] <- "Control_4" 
+
+names(TPP_Protein)[22] <- "ten_uM_1" 
+names(TPP_Protein)[23] <- "ten_uM_2" 
+names(TPP_Protein)[24] <- "ten_uM_3" 
+
+names(TPP_Protein)[25] <- "hundred_uM_1" 
+names(TPP_Protein)[26] <- "hundred_uM_2" 
+names(TPP_Protein)[27] <- "hundred_uM_3" 
+
+
+TPP_Protein_fil <- TPP_Protein %>% 
+  dplyr::select("Master_Protein_Accession", 9:12, 18:27) %>% 
+  # remove missing value
+  filter(!is.na(Control_1)) %>% 
+  mutate(Master_Protein_Accession = str_extract(Master_Protein_Accession, "^[^;-]+")) 
+
+
+# calculate the normalization factor, This normalization step mitigates the TMT channel to channel errors (e.g., differential sample loss and/or isobaric mass tag labeling efficiency). 
+TPP_norm_1 = sum(TPP_Protein_fil$Control_1, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_2 = sum(TPP_Protein_fil$Control_2, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_3 = sum(TPP_Protein_fil$Control_3, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_4 = sum(TPP_Protein_fil$Control_4, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_5 = sum(TPP_Protein_fil$ten_uM_1, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_6 = sum(TPP_Protein_fil$ten_uM_2, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_7 = sum(TPP_Protein_fil$ten_uM_3, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_8 = sum(TPP_Protein_fil$hundred_uM_1, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_9 = sum(TPP_Protein_fil$hundred_uM_2, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+TPP_norm_10 = sum(TPP_Protein_fil$hundred_uM_3, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
+
+
+TPP_Protein_fil_norm <- TPP_Protein_fil %>% 
+  mutate(Control_1 = Control_1/TPP_norm_1) %>% 
+  mutate(Control_2 = Control_2/TPP_norm_2) %>% 
+  mutate(Control_3 = Control_3/TPP_norm_3) %>% 
+  mutate(Control_4 = Control_4/TPP_norm_4) %>% 
+  mutate(ten_uM_1 = ten_uM_1/TPP_norm_5) %>% 
+  mutate(ten_uM_2 = ten_uM_2/TPP_norm_6) %>% 
+  mutate(ten_uM_3 = ten_uM_3/TPP_norm_7) %>% 
+  mutate(hundred_uM_1 = hundred_uM_1/TPP_norm_8) %>% 
+  mutate(hundred_uM_2 = hundred_uM_2/TPP_norm_9) %>% 
+  mutate(hundred_uM_3 = hundred_uM_3/TPP_norm_10) %>% 
+  dplyr::select(Master_Protein_Accession, 2:15) 
+
+names(TPP_Protein_fil_norm)
+
+# Welch t test for TPP file
+TPP_Protein_fil_norm_Welch_t_test <- TPP_Protein_fil_norm %>% 
+  rowwise() %>%
+  mutate(
+    # =======================
+    # 10 uM: 6:9 vs 10:12
+    # =======================
+    fold_change_ten_uM = {
+      x <- as.numeric(c_across(6:9))
+      y <- as.numeric(c_across(10:12))
+      x <- x[!is.na(x)]
+      y <- y[!is.na(y)]
+      if (length(x) > 0 && length(y) > 0) mean(y) / mean(x) else NA_real_
+    },
+    
+    log2FC_ten_uM = if (!is.na(fold_change_ten_uM) && fold_change_ten_uM > 0) {
+      log2(fold_change_ten_uM)
+    } else {
+      NA_real_
+    },
+    
+    p_value_ten_uM = {
+      x <- as.numeric(c_across(6:9))
+      y <- as.numeric(c_across(10:12))
+      x <- x[!is.na(x)]
+      y <- y[!is.na(y)]
+      if (length(x) >= 2 && length(y) >= 2) t.test(x, y)$p.value else NA_real_
+    },
+    
+    neg_log10_p_value_ten_uM = if (!is.na(p_value_ten_uM) && p_value_ten_uM > 0) {
+      -log10(p_value_ten_uM)
+    } else {
+      NA_real_
+    },
+    
+    # =======================
+    # 100 uM: 6:9 vs 13:15
+    # =======================
+    fold_change_hundred_uM = {
+      x <- as.numeric(c_across(6:9))
+      y <- as.numeric(c_across(13:15))
+      x <- x[!is.na(x)]
+      y <- y[!is.na(y)]
+      if (length(x) > 0 && length(y) > 0) mean(y) / mean(x) else NA_real_
+    },
+    
+    log2FC_hundred_uM = if (!is.na(fold_change_hundred_uM) && fold_change_hundred_uM > 0) {
+      log2(fold_change_hundred_uM)
+    } else {
+      NA_real_
+    },
+    
+    p_value_hundred_uM = {
+      x <- as.numeric(c_across(6:9))
+      y <- as.numeric(c_across(13:15))
+      x <- x[!is.na(x)]
+      y <- y[!is.na(y)]
+      if (length(x) >= 2 && length(y) >= 2) t.test(x, y)$p.value else NA_real_
+    },
+    
+    neg_log10_p_value_hundred_uM = if (!is.na(p_value_hundred_uM) && p_value_hundred_uM > 0) {
+      -log10(p_value_hundred_uM)
+    } else {
+      NA_real_
+    }
+  ) %>%
+  ungroup() %>% 
+  mutate(
+    # BH-FDR adjusted p values
+    adj_p_value_ten_uM = p.adjust(p_value_ten_uM, method = "BH"),
+    adj_p_value_hundred_uM = p.adjust(p_value_hundred_uM, method = "BH"),
+    
+    # Z-scores
+    log2FC_ten_uM_avg = mean(log2FC_ten_uM, na.rm = TRUE),
+    log2FC_ten_uM_sd  = sd(log2FC_ten_uM, na.rm = TRUE),
+    Z_Score_ten_uM    = (log2FC_ten_uM - log2FC_ten_uM_avg) / log2FC_ten_uM_sd,
+    
+    log2FC_hundred_uM_avg = mean(log2FC_hundred_uM, na.rm = TRUE),
+    log2FC_hundred_uM_sd  = sd(log2FC_hundred_uM, na.rm = TRUE),
+    Z_Score_hundred_uM    = (log2FC_hundred_uM - log2FC_hundred_uM_avg) / log2FC_hundred_uM_sd
+  )
+
+
+TPP_Protein_fil_norm_Welch_t_test_Gene_Name <- TPP_Protein_fil_norm_Welch_t_test %>% 
+  left_join(
+    uniprot_proteome,
+    by = "Master_Protein_Accession"
+  )
+
+
+# filter for hits
+TPP_Hits_ten_uM <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(Z_Score_ten_uM) > 2) %>% 
+  dplyr::select(Gene_Name) %>% 
+  distinct()
+
+TPP_Hits_hundred_uM <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(Z_Score_hundred_uM) > 2) %>% 
+  dplyr::select(Gene_Name) %>% 
+  distinct()
+
+TPP_Hits_overlapped <- inner_join(
+  TPP_Hits_ten_uM, 
+  TPP_Hits_hundred_uM) %>% 
+  distinct()
+
+
+#plot the result
+
+TPP_Hits_overlapped_plot <- TPP_Hits_overlapped %>% 
+  left_join(TPP_Protein_fil_norm_Welch_t_test_Gene_Name) %>% 
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(Z_Score_ten_uM) > 2) %>% 
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(Z_Score_hundred_uM) > 2) %>% 
+  filter(!Gene_Name == "ALDH1A3") %>% 
+  filter(!Gene_Name == "KRAS")
+
+# plot the volcano plots with Z-Score.
+
+# TPP_10uM
+TPP_10uM <- ggplot() +
+  # Background
+  geom_point(data = TPP_Protein_fil_norm_Welch_t_test_Gene_Name, aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM), color = "grey", size = 0.3, alpha = 0.6) +
+  # other proteins
+  geom_point(data = TPP_Hits_overlapped_plot, aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
+  # KRAS
+  geom_point(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS"), 
+    aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM), color = "red", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS"),
+    aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = 0.3, nudge_y = 0, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ALDH1A3
+  geom_point(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
+    aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
+    aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.2, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # Thresholds
+  geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
+  geom_vline(xintercept = c(-2, 2), linetype = "33", color = "black", linewidth = 0.25) +
+  labs(
+    x = expression("Z-Score"),y = expression(-log[10]~"(p-value)")) +
+  scale_x_continuous(limits = c(-6, 6), breaks = seq(-6, 6, by = 2), labels = scales::number_format(accuracy = 1)) +
+  scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks.length = unit(2, "pt"),
+    plot.margin = margin(6, 10, 6, 10),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12))
+
+TPP_10uM
+
+ggsave("volcano_TPP_10uM.png", TPP_10uM,
+       device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
+       dpi = 600)
+
+
+# TPP_100uM
+TPP_100uM <- ggplot() +
+  # Background
+  geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
+  # other proteins
+  geom_point(data = TPP_Hits_overlapped_plot, aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
+  # KRAS
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"), 
+    aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "red", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"),
+    aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = 0.2, nudge_y = 0, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ALDH1A3
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # Thresholds
+  geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
+  geom_vline(xintercept = c(-2, 2), linetype = "33", color = "black", linewidth = 0.25) +
+  labs(
+    x = expression("Z-Score"),y = expression(-log[10]~"(p-value)")) +
+  scale_x_continuous(limits = c(-6, 6), breaks = seq(-6, 6, by = 2), labels = scales::number_format(accuracy = 1)) +
+  scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks.length = unit(2, "pt"),
+    plot.margin = margin(6, 10, 6, 10),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12))
+
+TPP_100uM
+
+ggsave("volcano_TPP_100uM.png", TPP_100uM,
+       device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
+       dpi = 600)
+
+
+# plot the volcano plots with fold changes.
+
+# filter for hits
+TPP_Hits_ten_uM_FC <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(log2FC_ten_uM) > 0.2) %>% 
+  dplyr::select(Gene_Name) %>% 
+  distinct()
+
+TPP_Hits_hundred_uM_FC <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(log2FC_hundred_uM) > 0.2) %>% 
+  dplyr::select(Gene_Name) %>% 
+  distinct()
+
+TPP_Hits_overlapped_FC <- inner_join(
+  TPP_Hits_ten_uM_FC, 
+  TPP_Hits_hundred_uM_FC) %>% 
+  distinct()
+
+
+#plot the result
+
+TPP_Hits_overlapped_plot_FC <- TPP_Hits_overlapped_FC %>% 
+  left_join(TPP_Protein_fil_norm_Welch_t_test_Gene_Name) %>% 
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(log2FC_ten_uM) > 0.2) %>% 
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(log2FC_hundred_uM) > 0.2) %>% 
+  filter(!Gene_Name == "ALDH1A3") %>% 
+  filter(!Gene_Name == "KRAS")
+
+# plot the volcano plots with Z-Score.
+
+# TPP_10uM
+TPP_10uM_FC <- ggplot() +
+  # Background
+  geom_point(data = TPP_Protein_fil_norm_Welch_t_test_Gene_Name, aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "grey", size = 0.3, alpha = 0.6) +
+  # other proteins
+  geom_point(data = TPP_Hits_overlapped_plot_FC, aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
+  # KRAS
+  geom_point(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS"), 
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "red", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = 0.3, nudge_y = 0, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ALDH1A3
+  geom_point(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.2, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # Thresholds
+  geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
+  geom_vline(xintercept = c(-0.2, 0.2), linetype = "33", color = "black", linewidth = 0.25) +
+  labs(
+    x = expression(log[2]~"FC(10 uM)"),y = expression(-log[10]~"(p-value)")) +
+  scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 1), labels = scales::number_format(accuracy = 1)) +
+  scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks.length = unit(2, "pt"),
+    plot.margin = margin(6, 10, 6, 10),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12))
+
+TPP_10uM_FC
+
+ggsave("volcano_TPP_10uM_FC.png", TPP_10uM_FC,
+       device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
+       dpi = 600)
+
+
+# TPP_100uM
+TPP_100uM_FC <- ggplot() +
+  # Background
+  geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
+  # other proteins
+  geom_point(data = TPP_Hits_overlapped_plot_FC, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
+  # KRAS
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"), 
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "red", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = 0.2, nudge_y = 0, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ALDH1A3
+  geom_point(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # Thresholds
+  geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
+  geom_vline(xintercept = c(-0.2, 0.2), linetype = "33", color = "black", linewidth = 0.25) +
+  labs(
+    x = expression(log[2]~"FC(100 uM)"),y = expression(-log[10]~"(p-value)")) +
+  scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 1), labels = scales::number_format(accuracy = 1)) +
+  scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks = element_line(linewidth = 0.3, colour = "black"),
+    axis.ticks.length = unit(2, "pt"),
+    plot.margin = margin(6, 10, 6, 10),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12))
+
+TPP_100uM_FC
+
+ggsave("volcano_TPP_100uM_FC.png", TPP_100uM_FC,
+       device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
+       dpi = 600)
+```
+
+
