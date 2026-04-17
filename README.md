@@ -283,7 +283,7 @@ SPROX_Hits_overlapped_plot <- SPROX_Hits_overlapped %>%
 SPROX_10uM <- ggplot() +
   # Background
   geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM), color = "grey", size = 0.3, alpha = 0.6) +
-  # other proteins
+  # overlapped proteins
   geom_point(data = SPROX_Hits_overlapped_plot, aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
   # KRAS
   geom_point(
@@ -336,7 +336,7 @@ ggsave("volcano_SPROX_10uM.png", SPROX_10uM,
 SPROX_100uM <- ggplot() +
   # Background
   geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
-  # other proteins
+  # overlapped proteins
   geom_point(data = SPROX_Hits_overlapped_plot, aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
   # KRAS
   geom_point(
@@ -420,7 +420,7 @@ SPROX_Hits_overlapped_plot_FC <- SPROX_Hits_overlapped_FC %>%
 SPROX_10uM_FC <- ggplot() +
   # Background
   geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "grey", size = 0.3, alpha = 0.6) +
-  # other proteins
+  # overlapped proteins
   geom_point(data = SPROX_Hits_overlapped_plot_FC, aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
   # KRAS
   geom_point(
@@ -473,7 +473,7 @@ ggsave("volcano_SPROX_10uM_FC.png", SPROX_10uM_FC,
 SPROX_100uM_FC <- ggplot() +
   # Background
   geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
-  # other proteins
+  # overlapped proteins
   geom_point(data = SPROX_Hits_overlapped_plot_FC, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
   # KRAS
   geom_point(
