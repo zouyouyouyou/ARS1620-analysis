@@ -56,7 +56,8 @@ library(RColorBrewer)
 The analysis begins by reading the UniProt human proteome annotation file and keeping the accession and gene name fields for downstream annotation.
 
 ```r
-uniprot_proteome_Homo_Sapiens <- read_tsv("SPROX/Data/uniprotkb_proteome_UP000005640_2024_09_23.tsv")
+# Update the file path below to match the location of your Data folder
+uniprot_proteome_Homo_Sapiens <- read_tsv("/Data/uniprotkb_proteome_UP000005640_2024_09_23.tsv")
 
 names(uniprot_proteome_Homo_Sapiens)[1] <- "Master_Protein_Accession"
 names(uniprot_proteome_Homo_Sapiens)[3] <- "Protein_names"
@@ -71,7 +72,9 @@ uniprot_proteome <- uniprot_proteome_Homo_Sapiens %>%
 
 ```r
 # Read one-pot SPROX data
+# Update the file path below to match the location of your Data folder
 SPROX_Met_Enrich = read_excel("/Data/Table_S2_ARS_1620_SPROX.xlsx", sheet = "raw_data")
+
 
 # rename the columns
 names(SPROX_Met_Enrich)[3] <- "Annotated_Sequence"
@@ -507,6 +510,7 @@ ggsave("volcano_SPROX_100uM_FC.png", SPROX_100uM_FC,
 
 ```r
 # read TPP files
+# Update the file path below to match the location of your Data folder
 TPP_Protein = read_excel("/Data/Table_S3_ARS_1620_TPP.xlsx", sheet = "raw_data")
 
 # rename the columns
@@ -950,6 +954,7 @@ ggsave("volcano_TPP_100uM_FC.png", TPP_100uM_FC,
 
 ```r
 # read TPP files
+# Update the file path below to match the location of your Data folder
 TPP_high_Protein = read_excel("/Data/Table_S4_ARS_1620_TPP_high_temperature.xlsx", sheet = "raw_data")
 
 # rename the columns
@@ -1393,6 +1398,7 @@ ggsave("volcano_TPP_high_100uM_FC.png", TPP_high_100uM_FC,
 ### ALDH1A3 Enzymatic Activity
 
 ```r
+# Update the file path below to match the location of your Data folder
 ALDH1A3 = read_excel("/Data/Table_S6_ALDH1A3_Enzymatic_Assay.xlsx", sheet = "raw_data")
 
 names(ALDH1A3)[2] <- "100000_nM"
