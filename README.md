@@ -1393,7 +1393,7 @@ ggsave("volcano_TPP_high_100uM_FC.png", TPP_high_100uM_FC,
 ### ALDH1A3 Enzymatic Activity
 
 ```r
-ALDH1A3 = read_excel("/Users/youzou/Desktop/ARS-1620/Activity_Assay/2025_11_05/ALDH1A3_single_file.xlsx")
+ALDH1A3 = read_excel("/Users/youzou/Desktop/ARS-1620/Code_for_ARS1620/Data/Table_S6_ALDH1A3_Enzymatic_Assay.xlsx", sheet = "raw_data")
 
 names(ALDH1A3)[2] <- "100000_nM"
 names(ALDH1A3)[3] <- "40000_nM"
