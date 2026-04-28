@@ -4,6 +4,7 @@ This repository contains R code for analysis of ARS-1620 experimental data, incl
 
 - one-pot SPROX analysis
 - one-pot TPP analysis
+- one-pot TPP (high) analysis
 - volcano plot generation
 - ALDH1A3 enzymatic activity analysis
 
