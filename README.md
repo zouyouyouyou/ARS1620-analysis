@@ -507,7 +507,7 @@ ggsave("volcano_SPROX_100uM_FC.png", SPROX_100uM_FC,
 
 ```r
 # read TPP files
-TPP_Protein = read_excel("/Users/youzou/Desktop/ARS-1620/TPP/Data/ARS_1620_TPP_Protein_no_scale.xlsx")
+TPP_Protein = read_excel("/Users/youzou/Desktop/ARS-1620/TPP/Data/ARS_1620_TPP.xlsx")
 
 # rename the columns
 names(TPP_Protein)[4] <- "Master_Protein_Accession" 
@@ -529,11 +529,12 @@ names(TPP_Protein)[25] <- "hundred_uM_1"
 names(TPP_Protein)[26] <- "hundred_uM_2" 
 names(TPP_Protein)[27] <- "hundred_uM_3" 
 
-
 TPP_Protein_fil <- TPP_Protein %>% 
   dplyr::select("Master_Protein_Accession", 9:12, 18:27) %>% 
   # remove missing value
-  filter(!is.na(Control_1)) %>% 
+  filter(if_all(c(Control_1, Control_2, Control_3, Control_4,
+                  ten_uM_1, ten_uM_2, ten_uM_3,
+                  hundred_uM_1, hundred_uM_2, hundred_uM_3), ~ !is.na(.))) %>% 
   mutate(Master_Protein_Accession = str_extract(Master_Protein_Accession, "^[^;-]+")) 
 
 
@@ -549,7 +550,7 @@ TPP_norm_8 = sum(TPP_Protein_fil$hundred_uM_1, na.rm = TRUE)/sum(TPP_Protein_fil
 TPP_norm_9 = sum(TPP_Protein_fil$hundred_uM_2, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
 TPP_norm_10 = sum(TPP_Protein_fil$hundred_uM_3, na.rm = TRUE)/sum(TPP_Protein_fil$Control_1, na.rm = TRUE)
 
-
+# apply normalization factor to each column
 TPP_Protein_fil_norm <- TPP_Protein_fil %>% 
   mutate(Control_1 = Control_1/TPP_norm_1) %>% 
   mutate(Control_2 = Control_2/TPP_norm_2) %>% 
@@ -562,8 +563,6 @@ TPP_Protein_fil_norm <- TPP_Protein_fil %>%
   mutate(hundred_uM_2 = hundred_uM_2/TPP_norm_9) %>% 
   mutate(hundred_uM_3 = hundred_uM_3/TPP_norm_10) %>% 
   dplyr::select(Master_Protein_Accession, 2:15) 
-
-names(TPP_Protein_fil_norm)
 
 # Welch t test for TPP file
 TPP_Protein_fil_norm_Welch_t_test <- TPP_Protein_fil_norm %>% 
@@ -633,10 +632,6 @@ TPP_Protein_fil_norm_Welch_t_test <- TPP_Protein_fil_norm %>%
   ) %>%
   ungroup() %>% 
   mutate(
-    # BH-FDR adjusted p values
-    adj_p_value_ten_uM = p.adjust(p_value_ten_uM, method = "BH"),
-    adj_p_value_hundred_uM = p.adjust(p_value_hundred_uM, method = "BH"),
-    
     # Z-scores
     log2FC_ten_uM_avg = mean(log2FC_ten_uM, na.rm = TRUE),
     log2FC_ten_uM_sd  = sd(log2FC_ten_uM, na.rm = TRUE),
@@ -654,7 +649,6 @@ TPP_Protein_fil_norm_Welch_t_test_Gene_Name <- TPP_Protein_fil_norm_Welch_t_test
     by = "Master_Protein_Accession"
   )
 
-
 # filter for hits
 TPP_Hits_ten_uM <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
   filter(p_value_ten_uM < 0.05) %>% 
@@ -668,9 +662,12 @@ TPP_Hits_hundred_uM <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
   dplyr::select(Gene_Name) %>% 
   distinct()
 
-TPP_Hits_overlapped <- inner_join(
-  TPP_Hits_ten_uM, 
-  TPP_Hits_hundred_uM) %>% 
+TPP_Hits_overlapped <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(Z_Score_ten_uM) > 2) %>% 
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(Z_Score_hundred_uM) > 2) %>% 
+  dplyr::select(Gene_Name) %>% 
   distinct()
 
 
@@ -707,11 +704,18 @@ TPP_10uM <- ggplot() +
   geom_text_repel(
     data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
     aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.2, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ADK
+  geom_point(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK"),
+    aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK"),
+    aes(x = Z_Score_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.2, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
   # Thresholds
   geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
   geom_vline(xintercept = c(-2, 2), linetype = "33", color = "black", linewidth = 0.25) +
   labs(
-    x = expression("Z-Score"),y = expression(-log[10]~"(p-value)")) +
+    x = expression("Z-Score (10 µM)"),y = expression(-log[10]~"(p-value)")) +
   scale_x_continuous(limits = c(-6, 6), breaks = seq(-6, 6, by = 2), labels = scales::number_format(accuracy = 1)) +
   scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
@@ -737,28 +741,35 @@ ggsave("volcano_TPP_10uM.png", TPP_10uM,
 # TPP_100uM
 TPP_100uM <- ggplot() +
   # Background
-  geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
+  geom_point(data = TPP_Protein_fil_norm_Welch_t_test_Gene_Name, aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
   # other proteins
   geom_point(data = TPP_Hits_overlapped_plot, aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
   # KRAS
   geom_point(
-    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"), 
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS"), 
     aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "red", size = 2.5, alpha = 0.95, shape = 16) +
   geom_text_repel(
-    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"),
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS"),
     aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = 0.2, nudge_y = 0, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
   # ALDH1A3
   geom_point(
-    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
     aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
   geom_text_repel(
-    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
+    aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ADK
+  geom_point(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK"),
+    aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK"),
     aes(x = Z_Score_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
   # Thresholds
   geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
   geom_vline(xintercept = c(-2, 2), linetype = "33", color = "black", linewidth = 0.25) +
   labs(
-    x = expression("Z-Score"),y = expression(-log[10]~"(p-value)")) +
+    x = expression("Z-Score (100 µM)"),y = expression(-log[10]~"(p-value)")) +
   scale_x_continuous(limits = c(-6, 6), breaks = seq(-6, 6, by = 2), labels = scales::number_format(accuracy = 1)) +
   scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
@@ -796,9 +807,12 @@ TPP_Hits_hundred_uM_FC <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
   dplyr::select(Gene_Name) %>% 
   distinct()
 
-TPP_Hits_overlapped_FC <- inner_join(
-  TPP_Hits_ten_uM_FC, 
-  TPP_Hits_hundred_uM_FC) %>% 
+TPP_Hits_overlapped_FC <- TPP_Protein_fil_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(log2FC_ten_uM) > 0.2) %>% 
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(log2FC_hundred_uM) > 0.2) %>% 
+  dplyr::select(Gene_Name) %>% 
   distinct()
 
 
@@ -813,9 +827,9 @@ TPP_Hits_overlapped_plot_FC <- TPP_Hits_overlapped_FC %>%
   filter(!Gene_Name == "ALDH1A3") %>% 
   filter(!Gene_Name == "KRAS")
 
-# plot the volcano plots with Z-Score.
+# plot the volcano plots with fold change.
 
-# TPP_10uM
+# TPP_10uM_FC
 TPP_10uM_FC <- ggplot() +
   # Background
   geom_point(data = TPP_Protein_fil_norm_Welch_t_test_Gene_Name, aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "grey", size = 0.3, alpha = 0.6) +
@@ -835,11 +849,18 @@ TPP_10uM_FC <- ggplot() +
   geom_text_repel(
     data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
     aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.2, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ADK
+  geom_point(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK"),
+    aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.2, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
   # Thresholds
   geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
   geom_vline(xintercept = c(-0.2, 0.2), linetype = "33", color = "black", linewidth = 0.25) +
   labs(
-    x = expression(log[2]~"FC(10 uM)"),y = expression(-log[10]~"(p-value)")) +
+    x = expression(log[2]~"FC (10 µM)"),y = expression(-log[10]~"(p-value)")) +
   scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 1), labels = scales::number_format(accuracy = 1)) +
   scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
@@ -862,31 +883,38 @@ ggsave("volcano_TPP_10uM_FC.png", TPP_10uM_FC,
        dpi = 600)
 
 
-# TPP_100uM
+# TPP_100uM_FC
 TPP_100uM_FC <- ggplot() +
   # Background
-  geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
+  geom_point(data = TPP_Protein_fil_norm_Welch_t_test_Gene_Name, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
   # other proteins
   geom_point(data = TPP_Hits_overlapped_plot_FC, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "#4B9CD3", size = 1, alpha = 0.6) +
   # KRAS
   geom_point(
-    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"), 
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS"), 
     aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "red", size = 2.5, alpha = 0.95, shape = 16) +
   geom_text_repel(
-    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS" & sequence == "VKDSEDVPMVLVGNK"),
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "KRAS"),
     aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = 0.2, nudge_y = 0, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
   # ALDH1A3
   geom_point(
-    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
     aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
   geom_text_repel(
-    data = subset(SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3" & sequence == "GLFIKPTVFSEVTDNMR"),
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ALDH1A3"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
+  # ADK
+  geom_point(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK"),
+    aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "blue", size = 2.5, alpha = 0.95, shape = 16) +
+  geom_text_repel(
+    data = subset(TPP_Protein_fil_norm_Welch_t_test_Gene_Name, Gene_Name == "ADK"),
     aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM, label = Gene_Name), size = 5, box.padding = 0.25, point.padding = 0.25, nudge_x = -0.2, nudge_y = 0.1, color = "black", segment.color = "black", segment.size = 0.25, max.overlaps = Inf) +
   # Thresholds
   geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
   geom_vline(xintercept = c(-0.2, 0.2), linetype = "33", color = "black", linewidth = 0.25) +
   labs(
-    x = expression(log[2]~"FC(100 uM)"),y = expression(-log[10]~"(p-value)")) +
+    x = expression(log[2]~"FC (100 µM)"),y = expression(-log[10]~"(p-value)")) +
   scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 1), labels = scales::number_format(accuracy = 1)) +
   scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
