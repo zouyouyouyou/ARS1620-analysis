@@ -71,7 +71,7 @@ uniprot_proteome <- uniprot_proteome_Homo_Sapiens %>%
 
 ```r
 # Read one-pot SPROX data
-SPROX_Met_Enrich = read_excel("/Users/youzou/Desktop/ARS-1620/Code_for_ARS1620/Data/Table_S2_ARS_1620_SPROX.xlsx", sheet = "raw_data")
+SPROX_Met_Enrich = read_excel("/Data/Table_S2_ARS_1620_SPROX.xlsx", sheet = "raw_data")
 
 # rename the columns
 names(SPROX_Met_Enrich)[3] <- "Annotated_Sequence"
@@ -507,7 +507,7 @@ ggsave("volcano_SPROX_100uM_FC.png", SPROX_100uM_FC,
 
 ```r
 # read TPP files
-TPP_Protein = read_excel("/Users/youzou/Desktop/ARS-1620/Code_for_ARS1620/Data/Table_S3_ARS_1620_TPP.xlsx", sheet = "raw_data")
+TPP_Protein = read_excel("/Data/Table_S3_ARS_1620_TPP.xlsx", sheet = "raw_data")
 
 # rename the columns
 names(TPP_Protein)[4] <- "Master_Protein_Accession" 
@@ -950,7 +950,7 @@ ggsave("volcano_TPP_100uM_FC.png", TPP_100uM_FC,
 
 ```r
 # read TPP files
-TPP_high_Protein = read_excel("/Users/youzou/Desktop/ARS-1620/Code_for_ARS1620/Data/Table_S4_ARS_1620_TPP_high_temperature.xlsx", sheet = "raw_data")
+TPP_high_Protein = read_excel("/Data/Table_S4_ARS_1620_TPP_high_temperature.xlsx", sheet = "raw_data")
 
 # rename the columns
 names(TPP_high_Protein)[4] <- "Master_Protein_Accession" 
@@ -1393,7 +1393,7 @@ ggsave("volcano_TPP_high_100uM_FC.png", TPP_high_100uM_FC,
 ### ALDH1A3 Enzymatic Activity
 
 ```r
-ALDH1A3 = read_excel("/Users/youzou/Desktop/ARS-1620/Code_for_ARS1620/Data/Table_S6_ALDH1A3_Enzymatic_Assay.xlsx", sheet = "raw_data")
+ALDH1A3 = read_excel("/Data/Table_S6_ALDH1A3_Enzymatic_Assay.xlsx", sheet = "raw_data")
 
 names(ALDH1A3)[2] <- "100000_nM"
 names(ALDH1A3)[3] <- "40000_nM"
