@@ -71,7 +71,7 @@ uniprot_proteome <- uniprot_proteome_Homo_Sapiens %>%
 
 ```r
 # Read one-pot SPROX data
-SPROX_Met_Enrich = read_excel("/Users/youzou/Desktop/ARS-1620/SPROX/Data/ARS_1620_SPROX.xlsx")
+SPROX_Met_Enrich = read_excel("/Users/youzou/Desktop/ARS-1620/Code_for_ARS1620/Data/Table_S2_ARS_1620_SPROX.xlsx", sheet = "raw_data")
 
 # rename the columns
 names(SPROX_Met_Enrich)[3] <- "Annotated_Sequence"
