@@ -950,7 +950,7 @@ ggsave("volcano_TPP_100uM_FC.png", TPP_100uM_FC,
 
 ```r
 # read TPP files
-TPP_high_Protein = read_excel("/Users/youzou/Desktop/ARS-1620/TPP_higher_temperature/Data/ARS_1620_TPP_high_temperature.xlsx")
+TPP_high_Protein = read_excel("/Users/youzou/Desktop/ARS-1620/Code_for_ARS1620/Data/Table_S4_ARS_1620_TPP_high_temperature.xlsx", sheet = "raw_data")
 
 # rename the columns
 names(TPP_high_Protein)[4] <- "Master_Protein_Accession" 
