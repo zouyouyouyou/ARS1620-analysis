@@ -71,7 +71,7 @@ uniprot_proteome <- uniprot_proteome_Homo_Sapiens %>%
 
 ```r
 # Read one-pot SPROX data
-SPROX_Met_Enrich <- read_excel("SPROX/Data/ARS_1620_Enrich_non_scale.xlsx")
+SPROX_Met_Enrich = read_excel("/Users/youzou/Desktop/ARS-1620/SPROX/Data/ARS_1620_SPROX.xlsx")
 
 # rename the columns
 names(SPROX_Met_Enrich)[3] <- "Annotated_Sequence"
@@ -113,38 +113,6 @@ SPROX_norm_8 = sum(SPROX_Met_Enrich_fil_wt_Met$hundred_uM_1, na.rm = TRUE)/sum(S
 SPROX_norm_9 = sum(SPROX_Met_Enrich_fil_wt_Met$hundred_uM_2, na.rm = TRUE)/sum(SPROX_Met_Enrich_fil_wt_Met$Control_1, na.rm = TRUE)
 SPROX_norm_10 = sum(SPROX_Met_Enrich_fil_wt_Met$hundred_uM_3, na.rm = TRUE)/sum(SPROX_Met_Enrich_fil_wt_Met$Control_1, na.rm = TRUE)
 
-# print nromalization factors
-SPROX_norm_1 
-SPROX_norm_2 
-SPROX_norm_3 
-SPROX_norm_4 
-SPROX_norm_5
-SPROX_norm_6 
-SPROX_norm_7
-SPROX_norm_8 
-SPROX_norm_9 
-SPROX_norm_10
-
-# > SPROX_norm_1 
-# [1] 1
-# > SPROX_norm_2 
-# [1] 0.9998314
-# > SPROX_norm_3 
-# [1] 1.003346
-# > SPROX_norm_4 
-# [1] 1.000769
-# > SPROX_norm_5
-# [1] 1.001683
-# > SPROX_norm_6 
-# [1] 0.998944
-# > SPROX_norm_7
-# [1] 1.001597
-# > SPROX_norm_8 
-# [1] 0.9992734
-# > SPROX_norm_9 
-# [1] 1.003763
-# > SPROX_norm_10 
-# [1] 1.003005
 
 # apply normalization factor to each column
 SPROX_Met_Enrich_fil_wt_Met_norm <- SPROX_Met_Enrich_fil_wt_Met %>% 
@@ -229,10 +197,6 @@ SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test <- SPROX_Met_Enrich_fil_wt_Met_nor
   ) %>%
   ungroup() %>% 
   mutate(
-    # BH-FDR adjusted p values
-    adj_p_value_ten_uM = p.adjust(p_value_ten_uM, method = "BH"),
-    adj_p_value_hundred_uM = p.adjust(p_value_hundred_uM, method = "BH"),
-    
     # Z-scores
     log2FC_ten_uM_avg = mean(log2FC_ten_uM, na.rm = TRUE),
     log2FC_ten_uM_sd  = sd(log2FC_ten_uM, na.rm = TRUE),
@@ -262,9 +226,12 @@ SPROX_Hits_hundred_uM <- SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name
   dplyr::select(Gene_Name) %>% 
   distinct()
 
-SPROX_Hits_overlapped <- inner_join(
-  SPROX_Hits_ten_uM, 
-  SPROX_Hits_hundred_uM) %>% 
+SPROX_Hits_overlapped <- SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(Z_Score_ten_uM) > 2) %>% 
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(Z_Score_hundred_uM) > 2) %>% 
+  dplyr::select(Gene_Name) %>% 
   distinct()
 
 #plot the result
@@ -310,7 +277,7 @@ SPROX_10uM <- ggplot() +
   geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
   geom_vline(xintercept = c(-2, 2), linetype = "33", color = "black", linewidth = 0.25) +
   labs(
-    x = expression("Z-Score"),y = expression(-log[10]~"(p-value)")) +
+    x = expression("Z-Score (10 µM)"),y = expression(-log[10]~"(p-value)")) +
   scale_x_continuous(limits = c(-6, 6), breaks = seq(-6, 6, by = 2), labels = scales::number_format(accuracy = 1)) +
   scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
@@ -363,7 +330,7 @@ SPROX_100uM <- ggplot() +
   geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
   geom_vline(xintercept = c(-2, 2), linetype = "33", color = "black", linewidth = 0.25) +
   labs(
-    x = expression("Z-Score"),y = expression(-log[10]~"(p-value)")) +
+    x = expression("Z-Score (100 µM)"),y = expression(-log[10]~"(p-value)")) +
   scale_x_continuous(limits = c(-6, 6), breaks = seq(-6, 6, by = 2), labels = scales::number_format(accuracy = 1)) +
   scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
@@ -401,9 +368,12 @@ SPROX_Hits_hundred_uM_FC <- SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_N
   dplyr::select(Gene_Name) %>% 
   distinct()
 
-SPROX_Hits_overlapped_FC <- inner_join(
-  SPROX_Hits_ten_uM_FC, 
-  SPROX_Hits_hundred_uM_FC) %>% 
+SPROX_Hits_overlapped_FC <- SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name %>%
+  filter(p_value_ten_uM < 0.05) %>% 
+  filter(abs(log2FC_ten_uM) > 0.2) %>% 
+  filter(p_value_hundred_uM < 0.05) %>% 
+  filter(abs(log2FC_hundred_uM) > 0.2) %>% 
+  dplyr::select(Gene_Name) %>% 
   distinct()
 
 #plot the result
@@ -416,7 +386,7 @@ SPROX_Hits_overlapped_plot_FC <- SPROX_Hits_overlapped_FC %>%
   filter(!Gene_Name == "ALDH1A3") %>% 
   filter(!Gene_Name == "KRAS")
 
-# SPROX_10uM
+# SPROX_10uM_FC
 SPROX_10uM_FC <- ggplot() +
   # Background
   geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = log2FC_ten_uM, y = neg_log10_p_value_ten_uM), color = "grey", size = 0.3, alpha = 0.6) +
@@ -447,7 +417,7 @@ SPROX_10uM_FC <- ggplot() +
   geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
   geom_vline(xintercept = c(-0.2, 0.2), linetype = "33", color = "black", linewidth = 0.25) +
   labs(
-    x = expression(log[2]~"FC(10 uM)"),y = expression(-log[10]~"(p-value)")) +
+    x = expression(log[2]~"FC (10 µM)"),y = expression(-log[10]~"(p-value)")) +
   scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 1), labels = scales::number_format(accuracy = 1)) +
   scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
@@ -469,7 +439,7 @@ ggsave("volcano_SPROX_10uM_FC.png", SPROX_10uM_FC,
        device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
        dpi = 600)
 
-# SPROX_100uM
+# SPROX_100uM_FC
 SPROX_100uM_FC <- ggplot() +
   # Background
   geom_point(data = SPROX_Met_Enrich_fil_wt_Met_norm_Welch_t_test_Gene_Name, aes(x = log2FC_hundred_uM, y = neg_log10_p_value_hundred_uM), color = "grey", size = 0.3, alpha = 0.6) +
@@ -500,7 +470,7 @@ SPROX_100uM_FC <- ggplot() +
   geom_hline(yintercept = -log10(0.05), linetype = "33", color = "black", linewidth = 0.25) +
   geom_vline(xintercept = c(-0.2, 0.2), linetype = "33", color = "black", linewidth = 0.25) +
   labs(
-    x = expression(log[2]~"FC(10 uM)"),y = expression(-log[10]~"(p-value)")) +
+    x = expression(log[2]~"FC (100 µM)"),y = expression(-log[10]~"(p-value)")) +
   scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 1), labels = scales::number_format(accuracy = 1)) +
   scale_y_continuous(limits = c(0, 4), breaks = 0:4) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
@@ -521,6 +491,7 @@ SPROX_100uM_FC
 ggsave("volcano_SPROX_100uM_FC.png", SPROX_100uM_FC,
        device = ragg::agg_png, width = 3.45, height = 3.2, units = "in",
        dpi = 600)
+
 ```
 
 ![SPROX 10 uM volcano plot](Results/volcano_SPROX_10uM.png)
