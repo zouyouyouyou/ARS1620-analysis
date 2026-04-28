@@ -1075,11 +1075,7 @@ TPP_high_Protein_fil_norm_Welch_t_test <- TPP_high_Protein_fil_norm %>%
   ) %>%
   ungroup() %>% 
   mutate(
-    # BH-FDR adjusted p values
-    adj_p_value_ten_uM = p.adjust(p_value_ten_uM, method = "BH"),
-    adj_p_value_hundred_uM = p.adjust(p_value_hundred_uM, method = "BH"),
-    
-    # Z-scores
+   # Z-scores
     log2FC_ten_uM_avg = mean(log2FC_ten_uM, na.rm = TRUE),
     log2FC_ten_uM_sd  = sd(log2FC_ten_uM, na.rm = TRUE),
     Z_Score_ten_uM    = (log2FC_ten_uM - log2FC_ten_uM_avg) / log2FC_ten_uM_sd,
