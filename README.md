@@ -53,6 +53,9 @@ library(RColorBrewer)
 ## UniProt annotation and one-pot SPROX analysis
 
 ### Read UniProt annotation file
+Data used in this analysis can be downloaded from the data/ folder in this GitHub repository.
+
+### Read UniProt annotation file
 
 The analysis begins by reading the UniProt human proteome annotation file and keeping the accession and gene name fields for downstream annotation.
 
