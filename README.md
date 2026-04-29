@@ -52,7 +52,7 @@ library(RColorBrewer)
 
 ## UniProt annotation and one-pot SPROX analysis
 
-### Read UniProt annotation file
+### Download of required datasets
 Data used in this analysis can be downloaded from the data/ folder in this GitHub repository.
 
 ### Read UniProt annotation file
